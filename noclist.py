@@ -1,7 +1,9 @@
+import pdb
 import sys
 import requests
 import hashlib
 import json
+from collections import namedtuple
 
 BASE_URL = "http://localhost:8888"
 
@@ -13,15 +15,20 @@ def retry(request_function):
         attempts = 0
         while attempts <= attempts_threshold:
             attempts += 1
+            print("attempt:", attempts)
             try:
                 print(f"trying {request_function.__name__} function")
                 response = request_function(*args, **kwargs)
-                # function success, probably a better way to handle this then a nested if
                 if response.status_code == 200:
                     return response
+                else:
+                    print("request worked but wasnt a 200", response)
+                    response.raise_for_status()
             except Exception as e:
+                print("BIG PROBLEM", e)
                 continue
-                print(e)
+        else:
+            print("maximum retries exceeded")
 
     return retry_wrapper
 
@@ -39,6 +46,7 @@ def get_users_list(auth_token):
     at the moment the auth token is passed here where checksum is called
     TODO: clean this up, think about seperation of concerns
     """
+    auth_token = get_auth_token()
     headers = {"X-Request-Checksum": calculate_checksum(auth_token, "/users")}
     response = requests.get("http://localhost:8888/users", headers=headers)
     return response
@@ -54,9 +62,9 @@ def main():
     a valid auth token is required, which is combined with the endpoint to create a checksum
     the list is returned as a list of 64-bit user ids which need to be split out onto their own lines
     """
-    auth_token = get_auth_token().headers["Badsec-Authentication-Token"]
-
+    auth_token = get_auth_token()
     users_list = json.dumps(get_users_list(auth_token).text.split("\n"))
+
     if auth_token and users_list:
         print(users_list)
         exit(0)
