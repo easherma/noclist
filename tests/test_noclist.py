@@ -12,6 +12,22 @@ If any call fails, retry up to 2 times
 If a call to an endpoint fails, you should retry up to 2 times. 
 """
 
+def test_500_main_exits(requests_mock):
+    with pytest.raises(SystemExit) as pytest_error:
+        requests_mock.head("http://localhost:8888/auth", status_code=500)
+        application = noclist.main()
+    assert pytest_error.type == SystemExit
+    assert pytest_error.value.code == 1
+
+
+def test_main_success(requests_mock):
+    with pytest.raises(SystemExit) as pytest_error:
+        requests_mock.head("http://localhost:8888/auth", headers=auth_headers)
+        requests_mock.get("http://localhost:8888/users", text=users_text)
+        noclist.main()
+    assert pytest_error.type == SystemExit
+    assert pytest_error.value.code == 0
+
 
 def test_get_auth_token(requests_mock):
     requests_mock.head("http://localhost:8888/auth", headers=auth_headers)
@@ -76,18 +92,4 @@ def test_get_users_list_connection_error(requests_mock):
     assert pytest_error.value.code == 1
 
 
-def test_500_main_exits(requests_mock):
-    with pytest.raises(SystemExit) as pytest_error:
-        requests_mock.head("http://localhost:8888/auth", status_code=500)
-        application = noclist.main()
-    assert pytest_error.type == SystemExit
-    assert pytest_error.value.code == 1
 
-
-def test_main_success(requests_mock):
-    with pytest.raises(SystemExit) as pytest_error:
-        requests_mock.head("http://localhost:8888/auth", headers=auth_headers)
-        requests_mock.get("http://localhost:8888/users", text=users_text)
-        noclist.main()
-    assert pytest_error.type == SystemExit
-    assert pytest_error.value.code == 0
