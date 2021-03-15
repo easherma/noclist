@@ -19,16 +19,18 @@ def retry(request_function):
             try:
                 print(f"trying {request_function.__name__} function")
                 response = request_function(*args, **kwargs)
+            except Exception as e:
+                print("BIG PROBLEM", e)
+                # TODO: better error handiling, exponential backoff
+                continue
+            else:
                 if response.status_code == 200:
                     return response
                 else:
-                    print("request worked but wasnt a 200", response)
-                    response.raise_for_status()
-            except Exception as e:
-                print("BIG PROBLEM", e)
-                continue
+                    continue
         else:
             print("maximum retries exceeded")
+            exit(1)
 
     return retry_wrapper
 
@@ -46,13 +48,15 @@ def get_users_list(auth_token):
     at the moment the auth token is passed here where checksum is called
     TODO: clean this up, think about seperation of concerns
     """
-    auth_token = get_auth_token()
     headers = {"X-Request-Checksum": calculate_checksum(auth_token, "/users")}
     response = requests.get("http://localhost:8888/users", headers=headers)
     return response
 
 
 def calculate_checksum(auth_token, request_path):
+    """
+    used by get_users_list
+    """
     return hashlib.sha256(auth_token.encode() + request_path.encode()).hexdigest()
 
 
@@ -62,11 +66,13 @@ def main():
     a valid auth token is required, which is combined with the endpoint to create a checksum
     the list is returned as a list of 64-bit user ids which need to be split out onto their own lines
     """
-    auth_token = get_auth_token()
-    users_list = json.dumps(get_users_list(auth_token).text.split("\n"))
+    # TODO: this seemingly dosen't always generate a new token
+    auth_token = get_auth_token().headers["Badsec-Authentication-Token"]
+    parsed_users_list = json.dumps(get_users_list(auth_token).text.split("\n"))
 
-    if auth_token and users_list:
-        print(users_list)
+    if auth_token and parsed_users_list:
+        print(parsed_users_list)
+        pdb.set_trace()
         exit(0)
     else:
         print("error occured", file=sys.stderr)
