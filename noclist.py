@@ -43,6 +43,9 @@ def retry(request_function):
 
 @retry
 def get_auth_token():
+    """
+    gets the auth token, needed to create the checksum to validate the request
+    """
     response = requests.head(f"{BASE_URL}/auth")
     return response
 
