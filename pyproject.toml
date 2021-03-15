@@ -5,7 +5,7 @@ description = ""
 authors = ["Eric Sherman <ericandrewsherman@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.6"
 requests = "^2.25.1"
 pytest = "^6.2.2"
 requests-mock = "^1.8.0"
